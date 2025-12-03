@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brainrot Alerts ⚡ 10m–999b Live Notifier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div class="container mx-auto p-4">
+    <h1 class="text-4xl font-bold text-center mb-8">🧠 Steal a Brainrot Notifier</h1>
+    <p class="text-center mb-4">Live alerts for 10m–999b events across all servers</p>
+    
+    <!-- Enable Notifications -->
+    <button id="enableNotifs" class="bg-blue-500 px-4 py-2 rounded mb-4">Enable Push Alerts</button>
+    
+    <!-- Live Alerts -->
+    <div id="alerts" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
+    
+    <!-- Active Servers -->
+    <h2 class="text-2xl mb-4">Active Servers (High-Pop)</h2>
+    <div id="servers" class="overflow-auto max-h-96"></div>
+  </div>
+
+  <script>
+    // Push setup
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('SW registered');
+      });
+    }
+
+    document.getElementById('enableNotifs').addEventListener('click', async () => {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const swReg = await navigator.serviceWorker.ready;
+        const subscription = await swReg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array('YOUR_PUBLIC_VAPID_KEY_HERE') // From server.js
+        });
+        await fetch('/subscribe', {
+          method: 'POST',
+          body: JSON.stringify(subscription),
+          headers: { 'Content-Type': 'application/json' }
+        });
+        alert('Alerts enabled! 🔔');
+      }
+    });
+
+    // Fetch live data
+    async function updateData() {
+      const res = await fetch('/api/servers');
+      const { servers, alerts } = await res.json();
+      
+      // Render alerts
+      document.getElementById('alerts').innerHTML = alerts.map(a => `
+        <div class="bg-red-800 p-4 rounded shadow">
+          <h3>${a.message}</h3>
+          <p>${a.players} players</p>
+          <a href="${a.joinUrl}" class="text-blue-300" target="_blank">Join Server</a>
+        </div>
+      `).join('') || '<p class="text-gray-500">No alerts yet...</p>';
+      
+      // Render servers
+      document.getElementById('servers').innerHTML = servers.map(s => `
+        <div class="bg-gray-800 p-2 rounded flex justify-between">
+          <span>ID: ${s.id} | FPS: ${s.fps || 'N/A'}</span>
+          <span>${s.playing} players</span>
+        </div>
+      `).join('');
+    }
+    updateData();
+    setInterval(updateData, 30000); // Refresh every 30s
+
+    // Helper: VAPID decode
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+    }
+  </script>
+</body>
+</html>
