@@ -1,0 +1,18 @@
+{
+  "name": "sab-notifier",
+  "version": "1.0.0",
+  "description": "Steal a Brainrot 10m-999b Notifier Website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "web-push": "^7.8.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
